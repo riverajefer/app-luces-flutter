@@ -1,11 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-String url = 'http://192.168.0.19:3000/luces/';
-String urlStatus = 'http://192.168.0.19:3000/luces/';
-String urlLuces = 'http://192.168.0.19:3000/luces/';
+String urlLuces = 'http://192.168.0.98:3000/luces/';
 
 void main() => runApp(MyApp());
 
@@ -24,7 +21,6 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
-
   final String title;
 
   @override
@@ -33,33 +29,35 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  bool _loading = false;
+  bool _loadingLuzCentral = false;
+  bool _loadingLuzLateral = false;
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+  final GlobalKey<ScaffoldState> mScaffoldState =
+      new GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.lime[50],
+      key: mScaffoldState,
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
+      body: Container(
+        margin: EdgeInsets.all(15.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             RaisedButton(
               padding: EdgeInsets.only(
-                  left: 75.0, right: 75.0, top: 25.0, bottom: 25.0),
+                  left: 50.0, right: 50.0, top: 20.0, bottom: 20.0),
               color: Colors.purple,
-              onPressed: _toggleLuz,
+              onPressed: !_loadingLuzCentral ? _onChangeLuzCentral : null,
               shape: new RoundedRectangleBorder(
                   borderRadius: new BorderRadius.circular(25.0)),
-              child: Container(
-                child: !_loading
+              child: Center(
+                child: !_loadingLuzCentral
                     ? Text(
                         'LUZ CENTRAL',
                         style: TextStyle(
@@ -70,32 +68,77 @@ class _MyHomePageState extends State<MyHomePage> {
                     : CircularProgressIndicator(),
               ),
             ),
-            Text(
-              '',
+            SizedBox(height: 50.0),
+            RaisedButton(
+              padding: EdgeInsets.only(
+                  left: 50.0, right: 50.0, top: 20.0, bottom: 20.0),
+              color: Colors.amberAccent,
+              onPressed: !_loadingLuzLateral ? _onChangeLuzLateral : null,
+              shape: new RoundedRectangleBorder(
+                  borderRadius: new BorderRadius.circular(25.0)),
+              child: Center(
+                child: !_loadingLuzLateral
+                    ? Text(
+                        'LUCES LATERALES',
+                        style: TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 25.0),
+                      )
+                    : CircularProgressIndicator(),
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ),
     );
   }
 
-  Future<String> _toggleLuz() async {
-    setState(() {
-      // _loading = true;
-    });
+  void _onChangeLuzCentral() {
+    toggleLuz('central');
+  }
 
-    var obj = {"name": "central", "state": "true"};
-    final response = await http
-        .post(urlLuces, body: obj, headers: {"Accept": "application/json"});
-    // final response = await http.get('http://192.168.0.19:3000/luces/');
+  void _onChangeLuzLateral() {
+    toggleLuz('lateral');
+  }
 
-    print('response: ' + response.body);
+  Future toggleLuz(String tipo) async {
+    try {
+      var obj = {"name": "central", "state": "true"};
+      if (tipo == 'lateral') {
+        obj = {"name": "lateral", "state": "true"};
 
-    return "";
+        setState(() {
+          _loadingLuzLateral = true;
+        });
+      } else {
+        setState(() {
+          _loadingLuzCentral = true;
+        });
+      }
+
+      var head = {"Accept": "application/json"};
+      final response = await http.post(urlLuces, body: obj, headers: head);
+      if (response.body != null) {
+        createSnackBar('OK !');
+        setState(() {
+          _loadingLuzCentral = false;
+          _loadingLuzLateral = false;
+        });
+      }
+    } catch (e) {
+      print(e.toString());
+      createSnackBar('Error al conectarse con el servidor ! '+e.toString());
+      setState(() {
+        _loadingLuzCentral = false;
+        _loadingLuzLateral = false;
+      });
+    }
+  }
+
+  void createSnackBar(String message) {
+    final snackBar =
+        new SnackBar(backgroundColor: Colors.lightBlue, content: new Text(message));
+    mScaffoldState.currentState.showSnackBar(snackBar);
   }
 }
