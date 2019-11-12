@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-String urlLuces = 'http://192.168.0.98:3000/luces/';
+String urlLuces = 'http://192.168.0.98:5000/luces';
 
 void main() => runApp(MyApp());
 
